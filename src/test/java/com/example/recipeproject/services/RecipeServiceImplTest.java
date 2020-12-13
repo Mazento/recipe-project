@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 class RecipeServiceImplTest {
-
     RecipeServiceImpl recipeService;
 
     @Mock
@@ -29,7 +28,6 @@ class RecipeServiceImplTest {
 
     @Test
     void getRecipes() {
-
         Recipe recipe = new Recipe();
         HashSet recipeData = new HashSet();
         recipeData.add(recipe);
