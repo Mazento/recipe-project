@@ -80,16 +80,57 @@ public class IngredientServiceImpl implements IngredientService {
                         .findById(command.getUom().getId())
                         .orElseThrow(() -> new RuntimeException("UOM NOT FOUND"))); //todo address this
             } else {
-                recipe.addIngredient(ingredientCommandToIngredient.convert(command));
+                // Add new ingredient
+                Ingredient ingredient = ingredientCommandToIngredient.convert(command);
+                ingredient.setRecipe(recipe);
+                recipe.addIngredient(ingredient);
             }
 
             Recipe savedRecipe = recipeRepository.save(recipe);
 
-            return ingredientToIngredientCommand.convert(savedRecipe.getIngredients().stream()
-                    .filter(recipeIngredients -> recipeIngredients.getId().equals(command.getId()))
-                    .findFirst()
-                    .get());
+            Optional<Ingredient> savedIngredientOptional = savedRecipe.getIngredients().stream()
+                    .filter(recipeIngredient -> recipeIngredient.getId().equals(command.getId()))
+                    .findFirst();
+
+            if (savedIngredientOptional.isEmpty()) {
+                savedIngredientOptional = savedRecipe.getIngredients().stream()
+                        .filter(recipeIngredient -> recipeIngredient.getDescription().equals(command.getDescription()))
+                        .filter(recipeIngredient -> recipeIngredient.getAmount().equals(command.getAmount()))
+                        .filter(recipeIngredient -> recipeIngredient.getUom().getId().equals(command.getUom().getId()))
+                        .findFirst();
+            }
+
+            return ingredientToIngredientCommand.convert(savedIngredientOptional.get());
         }
 
+    }
+
+    @Override
+    public void deleteIngredientById(Long recipeId, Long ingredientId) {
+        Optional<Recipe> recipeOptional = recipeRepository.findById(recipeId);
+
+        if (recipeOptional.isEmpty()) {
+            //todo toss error if not found!
+            log.error("Recipe not found for id: " + recipeId);
+            return;
+        }
+
+        log.debug("Recipe found!");
+        Recipe recipe = recipeOptional.get();
+
+        Optional<Ingredient> ingredientsOptional = recipe
+                .getIngredients()
+                .stream()
+                .filter(ingredient -> ingredient.getId().equals(ingredientId))
+                .findFirst();
+
+        if (ingredientsOptional.isPresent()) {
+            log.debug("Ingredient found!");
+            Ingredient ingredientToDelete = ingredientsOptional.get();
+            // hibernate removes this ingredient, because it is no longer related to any object
+            ingredientToDelete.setRecipe(null);
+            recipe.getIngredients().remove(ingredientsOptional.get());
+            recipeRepository.save(recipe);
+        }
     }
 }

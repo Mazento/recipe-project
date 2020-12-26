@@ -1,6 +1,8 @@
 package com.example.recipeproject.controllers;
 
 import com.example.recipeproject.commands.IngredientCommand;
+import com.example.recipeproject.commands.RecipeCommand;
+import com.example.recipeproject.commands.UnitOfMeasureCommand;
 import com.example.recipeproject.services.IngredientService;
 import com.example.recipeproject.services.RecipeService;
 import com.example.recipeproject.services.UnitOfMeasureService;
@@ -44,6 +46,25 @@ public class IngredientController {
     }
 
     @GetMapping
+    @RequestMapping("recipe/{recipeId}/ingredient/new")
+    public String newRecipeIngredient(@PathVariable String recipeId, Model model) {
+        // Make sure id value is correct
+        RecipeCommand recipeCommand =  recipeService.findCommandById(Long.valueOf(recipeId));
+
+        // Need to return back parent id for hidden form property
+        IngredientCommand ingredientCommand =  new IngredientCommand();
+        ingredientCommand.setRecipeId(Long.valueOf(recipeId));
+        model.addAttribute("ingredient", ingredientCommand);
+
+        // Init uom
+        ingredientCommand.setUom(new UnitOfMeasureCommand());
+
+        model.addAttribute("uomList", unitOfMeasureService.listAllUoms());
+
+        return "recipe/ingredient/ingredientform";
+    }
+
+    @GetMapping
     @RequestMapping("recipe/{recipeId}/ingredient/{id}/update")
     public String updateRecipeIngredient(@PathVariable String recipeId,
                                          @PathVariable String id, Model model){
@@ -51,6 +72,21 @@ public class IngredientController {
 
         model.addAttribute("uomList", unitOfMeasureService.listAllUoms());
         return "recipe/ingredient/ingredientform";
+    }
+
+    @GetMapping
+    @RequestMapping("recipe/{recipeId}/ingredient/{id}/delete")
+    public String deleteRecipeIngredient(@PathVariable String recipeId,
+                                         @PathVariable String id, Model model){
+        // Make sure id value is correct
+        RecipeCommand recipeCommand =  recipeService.findCommandById(Long.valueOf(recipeId));
+
+        log.debug("Deleting ingredient id: " + id);
+
+        ingredientService.deleteIngredientById(Long.valueOf(recipeId), Long.valueOf(id));
+
+        model.addAttribute("uomList", unitOfMeasureService.listAllUoms());
+        return "redirect:/recipe/" + recipeId + "/ingredients";
     }
 
     @PostMapping("recipe/{recipeId}/ingredient")
